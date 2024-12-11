@@ -1,0 +1,60 @@
+from aiogram import Bot, Dispatcher, types
+from aiogram import F
+from aiogram.filters import Command
+import asyncio
+from aiogram.fsm.state import StatesGroup, State
+#from aiogram.dispatcher import FSMContext
+from aiogram.filters import CommandStart
+
+api=""
+bot = Bot(token=api)
+dp = Dispatcher()
+
+class UserState(StatesGroup):
+    age=State()
+    growth=State()
+    weight=State()
+
+
+@dp.message(F.text=="Calories")
+async def set_age(message, state):
+        await message.answer(f'Введите свой возраст:')
+        #await UserState.age.state()
+        await state.set_state(UserState.age)
+
+@dp.message(UserState.age)
+async def set_growth(message, state):
+    await state.update_data(age=message.text)
+    await message.answer(f'Введите свой рост')
+    await state.set_state(UserState.growth)
+
+@dp.message(UserState.growth)
+async def set_weight(message, state):
+    await state.update_data(growth=message.text)
+    await message.answer(f'Введите свой вес')
+    await state.set_state(UserState.weight)
+
+
+@dp.message(UserState.weight)
+async def set_weight(message, state):
+    await state.update_data(weight=message.text)
+    data= await state.get_data()
+    kol=10*int(data['weight'])+ 6.25*int(data['growth'])- 5*int(data['age'])+int(5)
+    print(kol)
+    await message.answer(f'Норма каллорий {kol}')
+    await state.clear()
+
+
+@dp.message(F.text, Command("start"))
+async def start(message):
+    await message.answer(f'Привет! Я бот помогающий твоему здоровью.')
+
+@dp.message()
+async def all_massages(message):
+    await message.answer(f'Введите команду /start, чтобы начать общение.')
+
+
+async def main():
+    await dp.start_polling(bot)
+
+asyncio.run(main())
